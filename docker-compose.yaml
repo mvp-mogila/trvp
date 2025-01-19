@@ -1,0 +1,48 @@
+services:
+  db:
+    image: postgres:16
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: ${PGUSER}
+      POSTGRES_PASSWORD: ${PGPASSWORD}
+      POSTGRES_DB: ${DBNAME}
+    ports:
+      - ${PGPORT}:${PGPORT}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./server/db/migrations/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - app_network
+
+  backend:
+    build:
+      context: .
+      dockerfile: ./server/Dockerfile
+    container_name: backend
+    ports:
+      - ${PORT}:${PORT}
+    depends_on:
+      - db
+    networks:
+      - app_network
+    restart: always
+
+  frontend:
+    build:
+      context: .
+      dockerfile: ./src/Dockerfile
+    container_name: frontend
+    ports:
+      - ${FRONTENDPORT}:${FRONTENDPORT}
+    depends_on:
+      - backend
+    networks:
+      - app_network
+    restart: always
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  pg_data:
